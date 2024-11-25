@@ -19,9 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.naveen.questionservice.dtos.QuestionDto;
 import com.naveen.questionservice.models.Question;
 import com.naveen.questionservice.services.QuestionService;
+import com.naveen.questionservice.utils.ApiResponse;
+import com.naveen.questionservice.utils.ResponseBuilder;
 import com.naveen.questionservice.utils.exceptions.QuestionAlreadyExistsException;
 import com.naveen.questionservice.utils.exceptions.QuestionNotFoundException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -32,51 +35,57 @@ public class QuestionController {
 	private final QuestionService questionService;
 
 	@GetMapping
-	public ResponseEntity<List<QuestionDto>> getAllQuestions(@RequestParam(required = false) String category) {
+	public ResponseEntity<ApiResponse> getAllQuestions(@RequestParam(required = false) String category,
+			HttpServletRequest request) {
 		List<QuestionDto> questionDtos = questionService.getAllQuestions(category);
-		return ResponseEntity.ok(questionDtos);
+		return ResponseEntity.ok(ResponseBuilder.buildSuccessResponse(HttpStatus.OK.toString(), "Request is processed",
+				questionDtos, request));
 	}
 
 	@GetMapping(value = "{title}")
-	public ResponseEntity<QuestionDto> getQuestion(@PathVariable String title) {
+	public ResponseEntity<ApiResponse> getQuestion(@PathVariable String title, HttpServletRequest request) {
 		QuestionDto questionDto = questionService.getQuestion(title);
-		return ResponseEntity.ok(questionDto);
+		return ResponseEntity.ok(ResponseBuilder.buildSuccessResponse(HttpStatus.OK.toString(),
+				"Question data is fetched", questionDto, request));
 	}
 
 	@PostMapping
-	public ResponseEntity<Question> addQuestion(@RequestBody Question questiontoBeAdded) {
+	public ResponseEntity<ApiResponse> addQuestion(@RequestBody Question questiontoBeAdded,
+			HttpServletRequest request) {
 		Question question = questionService.addQuestion(questiontoBeAdded);
-		return ResponseEntity.status(HttpStatus.CREATED).body(question);
+		return ResponseEntity.ok(ResponseBuilder.buildSuccessResponse(HttpStatus.CREATED.toString(),
+				"Question entity is created", question, request));
 	}
 
 	@DeleteMapping(value = "{title}")
-	public ResponseEntity<Question> deleteQuestion(@PathVariable String title) {
+	public ResponseEntity<ApiResponse> deleteQuestion(@PathVariable String title, HttpServletRequest request) {
 		Question question = questionService.deleteQuestion(title);
-		return ResponseEntity.status(HttpStatus.OK).body(question);
+		return ResponseEntity.ok(ResponseBuilder.buildSuccessResponse(HttpStatus.OK.toString(),
+				"Question entity is deleted", question, request));
 	}
 
 	@PutMapping
-	public ResponseEntity<Question> uodateQuestion(@RequestBody Question questiontoBeUpdated) {
+	public ResponseEntity<ApiResponse> uodateQuestion(@RequestBody Question questiontoBeUpdated,
+			HttpServletRequest request) {
 		Question question = questionService.updateQuestion(questiontoBeUpdated);
-		return ResponseEntity.status(HttpStatus.OK).body(question);
+		return ResponseEntity.ok(ResponseBuilder.buildSuccessResponse(HttpStatus.OK.toString(),
+				"Question details are updated", question, request));
 	}
 
 	@ResponseStatus(value = HttpStatus.CONFLICT)
 	@ExceptionHandler(QuestionAlreadyExistsException.class)
-	public String handleQuestionAlreadyExistsException(QuestionAlreadyExistsException exception) {
-		return exception.getMessage();
+	public ApiResponse handleQuestionAlreadyExistsException(QuestionAlreadyExistsException exception,
+			HttpServletRequest request) {
+		return ResponseBuilder.buildErrorResponse(HttpStatus.CONFLICT.toString(), "Already exists",
+				exception.getMessage(), request);
 	}
 
 	@ResponseStatus(value = HttpStatus.NOT_FOUND)
 	@ExceptionHandler(QuestionNotFoundException.class)
-	public String handleQuestionNotFoundException(QuestionNotFoundException exception) {
-		return exception.getMessage();
+	public ApiResponse handleQuestionNotFoundException(QuestionNotFoundException exception,
+			HttpServletRequest request) {
+		return ResponseBuilder.buildErrorResponse(HttpStatus.NOT_FOUND.toString(), "Question does not exist",
+				exception.getMessage(), request);
 	}
 
-	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
-	@ExceptionHandler(Exception.class)
-	public String handleGenericExcepion(Exception exception) {
-		exception.printStackTrace();
-		return exception.getMessage();
-	}
 }
